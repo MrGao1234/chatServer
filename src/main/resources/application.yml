@@ -1,0 +1,7 @@
+server:
+  port: 8082
+  max-http-header-size: 10240
+  tomcat:
+    max-connections: 3000
+    max-threads: 1000
+    basedir: logistics/uploads

@@ -1,7 +1,24 @@
 server:
   port: 8082
-  max-http-header-size: 10240
   tomcat:
     max-connections: 3000
     max-threads: 1000
     basedir: logistics/uploads
+
+spring:
+  #redis配置信息
+  redis:
+    #redis 服务器地址
+    host: 148.70.100.4
+    #redis端口
+    port: 6379
+    #redis 密码
+    password: 123456
+    #数据库
+    database: 0
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://148.70.100.4:3306/chat?useUnicode=true&characterEncoding=utf-8&useSSL=false
+    username: root
+    password: 1234

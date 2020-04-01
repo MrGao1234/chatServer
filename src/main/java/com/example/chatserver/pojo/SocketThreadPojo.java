@@ -1,5 +1,6 @@
 package com.example.chatserver.pojo;
 
+import com.alibaba.fastjson.JSON;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -8,6 +9,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -82,26 +85,20 @@ public class SocketThreadPojo extends Thread{
                     //文本消息
                     if("MESSAGE".equals(type)){
                         String msg = (String)hashMap.get("message");
-                        String chat = (String)hashMap.get("chat");
 
-                        //群聊(广播)
-                        if("GROUP".equals(chat)){
-                            //遍历容器，给容器每个对象转发消息
-                            for(SocketThreadPojo st : serverThreadMap.values()){
-                                if(st != this){
-                                    st.os.write(new String(b,0,length).getBytes());
-                                }
-                            }
+                        //if("PRIVATE".equals(chat)){
+                        String to = (String)hashMap.get("to");
+                        //serverThreadMap.get(to).os.write(new String(b,0,length).getBytes());
+                        //后台打印
+                        System.out.println(clientName + "向" + to + "说：" + msg);
 
-                            //后台打印
-                            System.out.println(clientName + ":" + msg);
-                        }
-
-                        if("PRIVATE".equals(chat)){
-                            String to = (String)hashMap.get("to");
-                            serverThreadMap.get(to).os.write(new String(b,0,length).getBytes());
-                            //后台打印
-                            System.out.println(clientName + "向" + to + "说：" + msg);
+                        /**发送消息*/
+                        //判断对方是否登录
+                        if(serverThreadMap.get(to) == null){
+                            System.out.println("to" + "尚未登录" );
+                        }else{
+                            MessagePojo messagePojo = new MessagePojo("MESSAGE",msg,clientName,to,new SimpleDateFormat("yyyy-MM-dd HH-mm_ss").format(new Date()));
+                            serverThreadMap.get(to).os.write(JSON.toJSONString(messagePojo).getBytes());
                         }
                     }
                 }

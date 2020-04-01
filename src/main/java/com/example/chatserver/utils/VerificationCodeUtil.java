@@ -69,7 +69,7 @@ public class VerificationCodeUtil {
         Random random = new Random();
         graphics2D.setColor(Color.WHITE);
         graphics2D.fillRect(0, 0, width,height);
-        Font font = new Font("楷体",Font.PLAIN,fontHeight);
+        Font font = new Font("宋体",Font.BOLD, fontHeight);
         graphics2D.setFont(font);
 
         /*画线*/

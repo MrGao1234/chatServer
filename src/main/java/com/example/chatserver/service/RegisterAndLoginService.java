@@ -22,6 +22,7 @@ import org.springframework.util.DigestUtils;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 @Service
@@ -94,11 +95,13 @@ public class RegisterAndLoginService {
             //说明该号码存在
             if(userList.get(0).getPassword().equals(DigestUtils.md5DigestAsHex(userPojo.getPassword().getBytes()))){
 
-                //说明密码正确,登录成功，将该用户信息放入redis中
-                hashOperations.put(RedisEnum.AlreadyLoginList.getCode(),userList.get(0).getAccount(),userList.get(0));
+                //说明密码正确,登录成功，生成一个临时的32位的 userKey，根据该 userKey 将该用户信息放入redis中
+                String userKey = UUID.randomUUID().toString();
+
+                hashOperations.put(RedisEnum.AlreadyLoginList.getCode(),userKey,userList.get(0));
                 redisUtils.persistKey(RedisEnum.AlreadyLoginList.getCode());
 
-                return new ResponsePojo().response(ResponseCode.SuccessMessage.getCode(), ResponseMessage.SuccessLogin.toString());
+                return new ResponsePojo().response(ResponseCode.SuccessMessage.getCode(), ResponseMessage.SuccessLogin.toString(),userKey);
             }else{
                 return new ResponsePojo().response(ResponseCode.FailMessage.getCode(),ResponseMessage.FailLoginPasswordWrong.toString());
             }

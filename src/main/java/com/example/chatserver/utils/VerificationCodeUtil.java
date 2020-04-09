@@ -11,9 +11,9 @@ import java.util.Random;
 public class VerificationCodeUtil {
 
     // 图片的宽度。
-    private int width = 80;
+    private int width = 110;
     // 图片的高度。
-    private int height = 30;
+    private int height = 35;
     // 验证码字符个数
     private int codeCount = 4;
     // 验证码干扰线数

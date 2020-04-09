@@ -14,7 +14,7 @@ public class UserInterceptor implements HandlerInterceptor {
         Map<String,String[]> paramMap = request.getParameterMap();
         //Set<Map.Entry<String,String[]>> entrySet = paramMap.entrySet();
         //Set<String> keySet = paramMap.keySet();
-        String userId = paramMap.get("userKey")[0];
+        //String userId = paramMap.get("userKey")[0];
 
 
 

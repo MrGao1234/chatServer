@@ -9,16 +9,14 @@ import com.example.chatserver.enums.ResponseMessage;
 import com.example.chatserver.enums.VerificationCodeEnum;
 import com.example.chatserver.pojo.ResponsePojo;
 import com.example.chatserver.pojo.UserPojo;
-import com.example.chatserver.utils.RedisUtils;
-import com.example.chatserver.utils.SmsUtil;
-import com.example.chatserver.utils.VerificationCode;
-import com.example.chatserver.utils.VerificationCodeUtil;
+import com.example.chatserver.utils.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.HashOperations;
 import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.List;
@@ -47,16 +45,14 @@ public class RegisterAndLoginService {
         String code = VerificationCode.phoneVerificationCode();
 
         /*存储验证码*/
-        valueOperations.set(phone + VerificationCodeEnum.phoneVerificationCode.getCode(),code);
-        redisUtils.expireKey(phone + VerificationCodeEnum.phoneVerificationCode.getCode(),5, TimeUnit.MINUTES);
+        valueOperations.set(SessionUtils.getSession().getId() + phone,code);
+        redisUtils.expireKey(SessionUtils.getSession().getId() + phone,5, TimeUnit.MINUTES);
         //System.out.println(valueOperations.get(phone));
 
         /*发送短信*/
         try {
             SmsUtil.sendMessage(phone,code);
         } catch (ClientException e) {
-            e.printStackTrace();
-        } catch (InterruptedException e) {
             e.printStackTrace();
         }
     }
@@ -66,7 +62,7 @@ public class RegisterAndLoginService {
     public String registerUser(UserPojo userPojo){
         String phone = userPojo.getPhone();
         //1，判断验证码
-        if( phone == null || userPojo.getVerificode() == null || !userPojo.getVerificode().equals((valueOperations.get(phone + VerificationCodeEnum.phoneVerificationCode.getCode())))){
+        if( phone == null || userPojo.getVerificode() == null || !userPojo.getVerificode().equals((valueOperations.get( SessionUtils.getSession().getId() + phone )))){
             return new ResponsePojo().response(ResponseCode.FailMessage.getCode(), ResponseMessage.FailCerificode.toString());
         }
         //2，判断号码是否存在
@@ -77,7 +73,7 @@ public class RegisterAndLoginService {
          3,完成注册
             3.1 账号默认生成，作为唯一不能重复
          */
-        String account = (userDao.getMaxId() + 100000) + "";
+        String account = phone;
         userDao.save( new User(account, DigestUtils.md5DigestAsHex(userPojo.getPassword().getBytes()),phone,userPojo.getNickName()));
         return new ResponsePojo().response(ResponseCode.SuccessMessage.getCode(),ResponseMessage.SuccessRegister.toString(),account);
     }
@@ -92,16 +88,22 @@ public class RegisterAndLoginService {
         List<User> userList;
         userList = userDao.findUserByAccountAndPhone(account);
         if(userList != null && userList.size() > 0){
+
+            //判断验证码是否正确
+            String sessionId = SessionUtils.getSession().getId();
+            if( userPojo.getVerificode() == null || !userPojo.getVerificode().equals(valueOperations.get(sessionId))){
+                return new ResponsePojo().response(ResponseCode.WrongVerifation.getCode(),ResponseMessage.FailCerificode.toString());
+            }
+
             //说明该号码存在
             if(userList.get(0).getPassword().equals(DigestUtils.md5DigestAsHex(userPojo.getPassword().getBytes()))){
 
-                //说明密码正确,登录成功，生成一个临时的32位的 userKey，根据该 userKey 将该用户信息放入redis中
-                String userKey = UUID.randomUUID().toString();
-
-                hashOperations.put(RedisEnum.AlreadyLoginList.getCode(),userKey,userList.get(0));
+                //说明密码正确,登录成功，根据 sessionId 将该用户信息放入redis中
+                //String userKey = UUID.randomUUID().toString();
+                hashOperations.put(RedisEnum.AlreadyLoginList.getCode(),SessionUtils.getSession().getId(),userList.get(0));
                 redisUtils.persistKey(RedisEnum.AlreadyLoginList.getCode());
 
-                return new ResponsePojo().response(ResponseCode.SuccessMessage.getCode(), ResponseMessage.SuccessLogin.toString(),userKey);
+                return new ResponsePojo().response(ResponseCode.SuccessMessage.getCode(), ResponseMessage.SuccessLogin.toString());
             }else{
                 return new ResponsePojo().response(ResponseCode.FailMessage.getCode(),ResponseMessage.FailLoginPasswordWrong.toString());
             }
@@ -111,7 +113,7 @@ public class RegisterAndLoginService {
 
 
     /*图片验证码*/
-    public void drawPhoneVerificationCode(String account,HttpServletResponse response) throws IOException {
+    public void drawPhoneVerificationCode(HttpServletResponse response) throws IOException {
         response.setContentType("image/jpeg");
         //禁止图像缓存
         response.setHeader("Pragma","no-cache");
@@ -121,10 +123,11 @@ public class RegisterAndLoginService {
 
         //获取验证码
         String code = imageUtil.getCode();
-        valueOperations.set(account + VerificationCodeEnum.photoVerificationCode.getCode(),code);
-        redisUtils.expireKey(account + VerificationCodeEnum.photoVerificationCode.getCode(),3, TimeUnit.MINUTES);
+        String sessionId = SessionUtils.getSession().getId();
+        valueOperations.set(sessionId,code);
+        redisUtils.expireKey(sessionId,3, TimeUnit.MINUTES);
 
         //响应验证码图片
-        imageUtil.write(response.getOutputStream());
+        imageUtil.write( response.getOutputStream() );
     }
 }

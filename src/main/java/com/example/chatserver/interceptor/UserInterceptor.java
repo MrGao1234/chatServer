@@ -4,6 +4,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import org.springframework.web.servlet.ModelAndView;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 import java.util.Map;
 
 public class UserInterceptor implements HandlerInterceptor {
@@ -16,7 +17,8 @@ public class UserInterceptor implements HandlerInterceptor {
         //Set<String> keySet = paramMap.keySet();
         //String userId = paramMap.get("userKey")[0];
 
-
+        HttpSession session = request.getSession();
+        System.out.println(session.getId());
 
         return true;
     }

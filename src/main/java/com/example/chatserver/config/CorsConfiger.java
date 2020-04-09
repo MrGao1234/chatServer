@@ -20,8 +20,8 @@ public class CorsConfiger extends WebMvcConfigurationSupport {
     protected void addInterceptors(InterceptorRegistry registry) {
         super.addInterceptors(registry);
         registry.addInterceptor( new UserInterceptor())
-                .addPathPatterns("/**")
-                .excludePathPatterns("/registerAndLogin/**");//放过 registerAndLogin 路径下的接口
+                .addPathPatterns("/**");
+                //.excludePathPatterns("/registerAndLogin/**");//放过 registerAndLogin 路径下的接口
     }
 
     /*

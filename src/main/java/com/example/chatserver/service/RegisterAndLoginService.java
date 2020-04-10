@@ -1,12 +1,14 @@
 package com.example.chatserver.service;
 
 import com.aliyuncs.exceptions.ClientException;
+import com.example.chatserver.bean.LoginInformation;
 import com.example.chatserver.bean.User;
+import com.example.chatserver.dao.LoginInformationDao;
 import com.example.chatserver.dao.UserDao;
+import com.example.chatserver.enums.LoginInformationEnum;
 import com.example.chatserver.enums.RedisEnum;
 import com.example.chatserver.enums.ResponseCode;
 import com.example.chatserver.enums.ResponseMessage;
-import com.example.chatserver.enums.VerificationCodeEnum;
 import com.example.chatserver.pojo.ResponsePojo;
 import com.example.chatserver.pojo.UserPojo;
 import com.example.chatserver.utils.*;
@@ -16,9 +18,9 @@ import org.springframework.data.redis.core.ValueOperations;
 import org.springframework.stereotype.Service;
 import org.springframework.util.DigestUtils;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -37,6 +39,9 @@ public class RegisterAndLoginService {
 
     @Autowired
     private UserDao userDao;
+
+    @Autowired
+    private LoginInformationDao loginInformationDao;
 
     /*发送短信*/
     public void sendPhoneVerificationCode(String phone){
@@ -73,9 +78,10 @@ public class RegisterAndLoginService {
          3,完成注册
             3.1 账号默认生成，作为唯一不能重复
          */
-        String account = phone;
+        String account = UUID.randomUUID().toString().replace("-","");
         userDao.save( new User(account, DigestUtils.md5DigestAsHex(userPojo.getPassword().getBytes()),phone,userPojo.getNickName()));
-        return new ResponsePojo().response(ResponseCode.SuccessMessage.getCode(),ResponseMessage.SuccessRegister.toString(),account);
+        loginInformationDao.save(new LoginInformation(account,new Date(), LoginInformationEnum.REGISTER.getCode()));
+        return new ResponsePojo().response(ResponseCode.SuccessMessage.getCode(),ResponseMessage.SuccessRegister.toString());
     }
 
     /*登录*/
@@ -86,7 +92,7 @@ public class RegisterAndLoginService {
 
         //先判断号码
         List<User> userList;
-        userList = userDao.findUserByAccountAndPhone(account);
+        userList = userDao.findUserByPhone(account);
         if(userList != null && userList.size() > 0){
 
             //判断验证码是否正确
@@ -103,7 +109,7 @@ public class RegisterAndLoginService {
                 hashOperations.put(RedisEnum.AlreadyLoginList.getCode(),SessionUtils.getSession().getId(),userList.get(0));
                 redisUtils.persistKey(RedisEnum.AlreadyLoginList.getCode());
 
-                return new ResponsePojo().response(ResponseCode.SuccessMessage.getCode(), ResponseMessage.SuccessLogin.toString());
+                return new ResponsePojo().response(ResponseCode.SuccessMessage.getCode(), ResponseMessage.SuccessLogin.toString(),userList.get(0));
             }else{
                 return new ResponsePojo().response(ResponseCode.FailMessage.getCode(),ResponseMessage.FailLoginPasswordWrong.toString());
             }

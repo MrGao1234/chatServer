@@ -1,4 +1,4 @@
-package com.example.chatserver.pojo;
+package com.example.chatserver.socket;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -12,12 +12,12 @@ import java.net.Socket;
  * 3，通过端口监听对象，获取 socket 实例，并且获取网络流
  * 4，输出网络流数据，并且关闭流
  * */
-public class SocketServerPojo {
+public class SocketServer {
 
     /**
      * 解析接收到的消息
      * */
-    public void acceptMessageFromClient(Socket socket){
+    /*public void acceptMessageFromClient(Socket socket){
         System.out.println( socket.getInetAddress()  );
         System.out.println( socket.getPort() );
         BufferedInputStream bufferedInputStream = null;
@@ -35,12 +35,12 @@ public class SocketServerPojo {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
+    }*/
 
     /**
      * 通过socket向指定客户端发送消息
      * */
-    public void sendMessageToClient(Socket socket ){
+    /*public void sendMessageToClient(Socket socket ){
        BufferedOutputStream bufferedOutputStream;
         try {
             bufferedOutputStream = new BufferedOutputStream( socket.getOutputStream() );
@@ -50,7 +50,7 @@ public class SocketServerPojo {
         } catch (IOException e) {
             e.printStackTrace();
         }
-    }
+    }*/
 
     private ServerSocket server = null;
     private Socket socket = null;
@@ -64,7 +64,7 @@ public class SocketServerPojo {
                 //等待连接
                 socket = server.accept();
                 //接收到一个连接，就启动一个监听线程
-                new SocketThreadPojo(server,socket).start();
+                new SocketThread(server,socket).start();
             }
         } catch (IOException e) {
             e.printStackTrace();

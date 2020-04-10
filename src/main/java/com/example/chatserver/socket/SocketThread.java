@@ -1,8 +1,13 @@
-package com.example.chatserver.pojo;
+package com.example.chatserver.socket;
 
 import com.alibaba.fastjson.JSON;
+import com.example.chatserver.bean.LoginInformation;
+import com.example.chatserver.dao.LoginInformationDao;
+import com.example.chatserver.enums.LoginInformationEnum;
+import com.example.chatserver.pojo.MessagePojo;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -14,13 +19,17 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+
 @SuppressWarnings("Duplicates")
-public class SocketThreadPojo extends Thread{
+public class SocketThread extends Thread{
+
+    @Autowired
+    private LoginInformationDao loginInformationDao;
 
     /**
      * 客户端连接集合
      * */
-    private static Map<String,SocketThreadPojo> serverThreadMap = new HashMap<>();
+    private static Map<String, SocketThread> serverThreadMap = new HashMap<>();
 
     ServerSocket server = null;
     Socket socket = null;
@@ -29,9 +38,9 @@ public class SocketThreadPojo extends Thread{
     String clientName = null;
     boolean alive = true;
 
-    public SocketThreadPojo(){}
+    public SocketThread(){}
 
-    public SocketThreadPojo(ServerSocket server,Socket socket){
+    public SocketThread(ServerSocket server, Socket socket){
         this.socket = socket;
         this.server = server;
     }
@@ -72,8 +81,13 @@ public class SocketThreadPojo extends Thread{
 
                         //添加客户端到集合容器中
                         serverThreadMap.put(clientName,this);
+
+                        //添加登录信息到数据库表中
+                        loginInformationDao.save(new LoginInformation(clientName,new Date(), LoginInformationEnum.LOGIN.getCode()));
+
                         System.out.println(clientName + "连接成功！");
                         System.out.println("当前连接客户端数量：" + serverThreadMap.size());
+
                     }
 
                     //关闭

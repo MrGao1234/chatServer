@@ -2,12 +2,18 @@ package com.example.chatserver.socket;
 
 import com.alibaba.fastjson.JSON;
 import com.example.chatserver.bean.LoginInformation;
+import com.example.chatserver.bean.MessageInformation;
 import com.example.chatserver.dao.LoginInformationDao;
+import com.example.chatserver.dao.MessageInformationDao;
 import com.example.chatserver.enums.LoginInformationEnum;
-import com.example.chatserver.pojo.MessagePojo;
+import com.example.chatserver.enums.RedisEnum;
+import com.example.chatserver.utils.ApplicationContextProvider;
+import com.example.chatserver.utils.RedisUtils;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.redis.core.HashOperations;
+import org.springframework.data.redis.core.ListOperations;
+import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,14 +23,21 @@ import java.net.Socket;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
-
-@SuppressWarnings("Duplicates")
+@Component
 public class SocketThread extends Thread{
 
-    @Autowired
+    //jpa
     private LoginInformationDao loginInformationDao;
+    private MessageInformationDao messageInformationDao;
+
+    //redis工具类
+    private RedisUtils redisUtils;
+    //redis列表
+   // private HashOperations hashOperations;
+    private ListOperations listOperations;
 
     /**
      * 客户端连接集合
@@ -43,6 +56,10 @@ public class SocketThread extends Thread{
     public SocketThread(ServerSocket server, Socket socket){
         this.socket = socket;
         this.server = server;
+        this.loginInformationDao = ApplicationContextProvider.getBean(LoginInformationDao.class);
+        this.messageInformationDao = ApplicationContextProvider.getBean(MessageInformationDao.class);
+        this.redisUtils = ApplicationContextProvider.getBean(RedisUtils.class);
+        this.listOperations = ApplicationContextProvider.getBean(ListOperations.class);
     }
 
     @Override
@@ -84,16 +101,15 @@ public class SocketThread extends Thread{
 
                         //添加登录信息到数据库表中
                         loginInformationDao.save(new LoginInformation(clientName,new Date(), LoginInformationEnum.LOGIN.getCode()));
-
                         System.out.println(clientName + "连接成功！");
                         System.out.println("当前连接客户端数量：" + serverThreadMap.size());
-
                     }
 
                     //关闭
                     if("CLOSE".equals(type)){
                         alive = false;
                         System.out.println(clientName + "退出连接，关闭监听线程！");
+                        loginInformationDao.save(new LoginInformation(clientName,new Date(),LoginInformationEnum.EXIT.getCode()));
                     }
 
                     //文本消息
@@ -110,9 +126,22 @@ public class SocketThread extends Thread{
                         //判断对方是否登录
                         if(serverThreadMap.get(to) == null){
                             System.out.println("to" + "尚未登录" );
+
+                            //持久化数据
+                            MessageInformation information = new MessageInformation(msg,new Date(),clientName,to,"1");
+                            persisted(information);
+
                         }else{
-                            MessagePojo messagePojo = new MessagePojo("MESSAGE",msg,clientName,to,new SimpleDateFormat("yyyy-MM-dd HH-mm_ss").format(new Date()));
-                            serverThreadMap.get(to).os.write(JSON.toJSONString(messagePojo).getBytes());
+
+                            //向对方回信
+                            //MessagePojo messagePojo = new MessagePojo("MESSAGE",msg,clientName,to,new SimpleDateFormat("yyyy-MM-dd HH-mm_ss").format(new Date()));
+                            MessageInformation information = new MessageInformation(msg,new Date(),clientName,to,"0");
+                            serverThreadMap.get(to).os.write(JSON.toJSONString(information).getBytes());
+
+                            //持久化数据
+
+                            persisted(information);
+
                         }
                     }
                 }
@@ -122,6 +151,7 @@ public class SocketThread extends Thread{
             System.err.println(clientName + "断开连接！");
         } finally{
             serverThreadMap.remove(clientName);
+            loginInformationDao.save(new LoginInformation(clientName,new Date(),LoginInformationEnum.EXIT.getCode()));
             System.out.println( "当前客户端数量：" + serverThreadMap.size() );
             try {
                 os.close();
@@ -130,6 +160,25 @@ public class SocketThread extends Thread{
             } catch (IOException e) {
                 e.printStackTrace();
             }
+        }
+    }
+
+
+    public void persisted(MessageInformation message){
+        //将消息添加到redis中
+        listOperations.rightPush(RedisEnum.ChatMessageList.getCode(),message);
+        //消息够十条就保存数据库
+        if( (listOperations.size(RedisEnum.ChatMessageList.getCode()) ) >= 10){
+            List<MessageInformation> messageList = listOperations.range(RedisEnum.ChatMessageList.getCode(),0,listOperations.size(RedisEnum.ChatMessageList.getCode()));
+            //持久化到数据库
+            for(int i = 0;i < messageList.size();i++){
+                MessageInformation messageInformation = messageList.get(i);
+                messageInformationDao.save(messageInformation);
+            }
+            //messageInformationDao.saveAll(messageList);
+            //清空redis
+            //listOperations.p(RedisEnum.ChatMessageList.getCode());
+            redisUtils.deleteKey(RedisEnum.ChatMessageList.getCode());
         }
     }
 }

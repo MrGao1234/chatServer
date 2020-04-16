@@ -3,7 +3,10 @@ package com.example.chatserver.enums;
 public enum RedisEnum {
 
     //已登录用户列表
-    AlreadyLoginList("alreadyLoginList");
+    AlreadyLoginList("alreadyLoginList"),
+
+    //聊天消息列表
+    ChatMessageList("chatMessageList");
 
     private String code;
     RedisEnum(String code){

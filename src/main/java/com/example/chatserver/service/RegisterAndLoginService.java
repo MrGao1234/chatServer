@@ -136,4 +136,7 @@ public class RegisterAndLoginService {
         //响应验证码图片
         imageUtil.write( response.getOutputStream() );
     }
+
+    //当登录成功后，将好友列表和聊天列表都返回，用于初始化页面
+
 }

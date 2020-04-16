@@ -24,5 +24,9 @@ spring:
     username: root
     password: 1234
 
-  jpa:
-    show-sql: true
+  # jpa:
+    # show-sql: true
+file:
+  # windows
+  basedir: file:${file.realdir}
+  realdir: D:/myData/projectFiles/chatServer/

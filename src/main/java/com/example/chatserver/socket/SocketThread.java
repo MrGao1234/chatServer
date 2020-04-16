@@ -139,7 +139,6 @@ public class SocketThread extends Thread{
                             serverThreadMap.get(to).os.write(JSON.toJSONString(information).getBytes());
 
                             //持久化数据
-
                             persisted(information);
 
                         }

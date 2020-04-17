@@ -20,7 +20,7 @@ public class ServiceTest {
 
     @Test
     public void phoneTest(){
-        registerAndLoginService.sendPhoneVerificationCode("19916930429");
+        //registerAndLoginService.sendPhoneVerificationCode("18149781319");
     }
 
     @Test

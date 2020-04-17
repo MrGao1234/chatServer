@@ -29,4 +29,9 @@ public class ServiceTest {
         friendsService.getFriendMessageList();
     }
 
+    @Test
+    public void friendTest1(){
+        friendsService.judgeIsFriend("zhang","zhao");
+    }
+
 }

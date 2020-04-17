@@ -29,4 +29,5 @@ spring:
 file:
   # windows
   basedir: file:${file.realdir}
-  realdir: D:/myData/projectFiles/chatServer/
+  # realdir: D:/myData/projectFiles/chatServer/
+  realdir: /data/projectFile/chatServer/

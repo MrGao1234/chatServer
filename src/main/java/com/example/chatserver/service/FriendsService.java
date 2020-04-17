@@ -52,4 +52,19 @@ public class FriendsService {
         }
         return friendList;
     }
+
+    //judgeFriend
+    public int judgeIsFriend(String sender,String accepter){
+        FriendsInformation senderFriend = friendsInformationDao.findSenderFrientByAccepter(sender,accepter);
+        FriendsInformation accepterFriend = friendsInformationDao.findAccepterFriendBySender("wang",accepter);
+
+        if(senderFriend != null && accepterFriend != null){
+            return ResponseCode.ISFRIEND.getCode();
+        }
+
+        if(senderFriend != null && accepterFriend == null){
+            return ResponseCode.SINGLEFRIEND.getCode();
+        }
+        return ResponseCode.NOFRIEND.getCode();
+    }
 }
